@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico Anônimo — Excel Intermediário</title>
+  <style>
+    :root {
+      --excel: #107c41;
+      --excel-dark: #0b5a2f;
+      --excel-soft: #e8f5ee;
+      --bg: #f4f7f5;
+      --card: #ffffff;
+      --text: #1c2420;
+      --muted: #5a6860;
+      --border: #dce5df;
+      --star: #f59e0b;
+      --danger: #dc2626;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, var(--excel-dark), var(--excel));
+      color: #fff;
+      padding: 28px 16px 42px;
+    }
+    .topbar-inner {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(22px, 4vw, 30px);
+    }
+    .subtitle {
+      margin: 0;
+      opacity: 0.92;
+      font-size: 15px;
+    }
+
+    .progress-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(244, 247, 245, 0.94);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+    }
+    .progress-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: #dfe7e2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--excel);
+      transition: width 0.25s ease;
+    }
+
+    main {
+      max-width: 780px;
+      margin: -18px auto 48px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(16, 40, 26, 0.04);
+    }
+    .card.error-highlight {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+    }
+
+    .section-tag {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--excel);
+      margin-bottom: 4px;
+    }
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 19px;
+    }
+    .card-desc {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font: inherit;
+      font-size: 15px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--excel);
+    }
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .difficulty-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .diff-btn {
+      border: 1.5px solid var(--border);
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.18s;
+      color: var(--text);
+    }
+    .diff-btn strong { font-size: 20px; }
+    .diff-btn span { font-size: 11px; color: var(--muted); text-align: center; }
+    .diff-btn:hover { border-color: var(--excel); background: var(--excel-soft); }
+    .diff-btn.active {
+      background: var(--excel);
+      border-color: var(--excel);
+      color: #fff;
+    }
+    .diff-btn.active span { color: rgba(255,255,255,0.92); }
+
+    .concept-item {
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+    .concept-item:first-of-type { border-top: none; padding-top: 6px; }
+    .concept-item:last-of-type { padding-bottom: 4px; }
+    .concept-item.error-highlight {
+      background: #fef2f2;
+      margin: 0 -12px;
+      padding: 16px 12px;
+      border-radius: 10px;
+    }
+
+    .concept-title {
+      font-weight: 600;
+      font-size: 15.5px;
+      margin-bottom: 3px;
+    }
+    .concept-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .rating-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .unknown-btn {
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .unknown-btn:hover { border-color: #64748b; color: var(--text); }
+    .unknown-btn.active {
+      background: #334155;
+      border-color: #334155;
+      color: #fff;
+    }
+
+    .stars {
+      display: inline-flex;
+      gap: 4px;
+    }
+    .star-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 28px;
+      line-height: 1;
+      padding: 2px 3px;
+      color: #d1d9d4;
+      transition: transform 0.12s, color 0.12s;
+    }
+    .star-btn:hover { transform: scale(1.15); }
+    .star-btn.filled { color: var(--star); }
+
+    .rating-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--excel-dark);
+      min-width: 110px;
+    }
+
+    .field-group { margin-bottom: 16px; }
+    .field-group:last-child { margin-bottom: 0; }
+    .field-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 14.5px;
+      margin-bottom: 6px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background: var(--excel);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: var(--excel-dark); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .success-box {
+      display: none;
+      text-align: center;
+      padding: 42px 24px;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--excel-soft);
+      color: var(--excel);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 560px) {
+      .difficulty-grid { gap: 6px; }
+      .diff-btn { padding: 10px 4px; }
+      .diff-btn span { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="badge">100% ANÔNIMO • EXCEL INTERMEDIÁRIO</div>
+      <h1>Diagnóstico da Turma</h1>
+      <p class="subtitle">
+        Responda com sinceridade. Suas respostas não coletam nome nem e-mail e servem para ajustar o ritmo e as revisões em aula.
+      </p>
+    </div>
+  </header>
+
+  <div class="progress-sticky">
+    <div class="progress-inner">
+      <span id="progressText">0 de 15 obrigatórias</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+
+  <main>
+    <form id="diagForm" novalidate>
+      <!-- PERGUNTA 1 -->
+      <section class="card" id="card-caderno">
+        <div class="section-tag">Pergunta 1</div>
+        <h2>Em qual caderno de exercícios você está?</h2>
+        <p class="card-desc">Selecione o caderno em que você está trabalhando neste momento.</p>
+        <select id="caderno_atual" required>
+          <option value="">Selecione um caderno...</option>
+          <option value="Caderno 01 - Tabelas Oficiais e Colunas Calculadas">Caderno 01 — Tabelas Oficiais e Colunas Calculadas</option>
+          <option value="Caderno 02 - CONTAR.VAZIO e CONT.VALORES">Caderno 02 — CONTAR.VAZIO e CONT.VALORES</option>
+          <option value="Caderno 03 - SE e SEERRO">Caderno 03 — SE e SEERRO</option>
+          <option value="Caderno 04 - SE Composto (Aninhado)">Caderno 04 — SE Composto (Aninhado)</option>
+          <option value="Caderno 05 - SE Encadeado Avançado">Caderno 05 — SE Encadeado Avançado</option>
+          <option value="Caderno 06 - Datas e Horas (Padrão Brasil)">Caderno 06 — Datas e Horas (Padrão Brasil)</option>
+          <option value="Caderno 06B - Guia do comando DATADIF">Caderno 06B — Guia do comando DATADIF</option>
+          <option value="Caderno 06C - Guia dos comandos HOJE e AGORA">Caderno 06C — Guia dos comandos HOJE e AGORA</option>
+          <option value="Caderno 07 - Condicionais de Agregação">Caderno 07 — Condicionais de Agregação (CONT.SE, SOMASE, MÉDIASE e SES)</option>
+          <option value="Caderno 08 - PROCV e PROCH">Caderno 08 — PROCV e PROCH</option>
+          <option value="Concluí todos os cadernos (01 ao 08)">Já concluí todos os cadernos (01 ao 08)</option>
+        </select>
+      </section>
+
+      <!-- PERGUNTA 2 -->
+      <section class="card" id="card-dificuldade">
+        <div class="section-tag">Pergunta 2</div>
+        <h2>Qual o grau de dificuldade encontrado por você até agora?</h2>
+        <p class="card-desc">Sendo <strong>1 muito fácil</strong> e <strong>5 muito difícil</strong>.</p>
+        <div class="difficulty-grid" id="difficultyGroup">
+          <button type="button" class="diff-btn" data-val="1"><strong>1</strong><span>Muito fácil</span></button>
+          <button type="button" class="diff-btn" data-val="2"><strong>2</strong><span>Fácil</span></button>
+          <button type="button" class="diff-btn" data-val="3"><strong>3</strong><span>Moderado</span></button>
+          <button type="button" class="diff-btn" data-val="4"><strong>4</strong><span>Difícil</span></button>
+          <button type="button" class="diff-btn" data-val="5"><strong>5</strong><span>Muito difícil</span></button>
+        </div>
+      </section>
+
+      <!-- FASES 1 A 4 -->
+      <div id="phasesContainer"></div>
+
+      <!-- QUESTÃO ABERTA -->
+      <section class="card">
+        <div class="section-tag">Fechamento • Espaço Aberto</div>
+        <h2>Sua avaliação sobre o curso</h2>
+        <p class="card-desc">Fique à vontade para escrever livremente — o envio é totalmente anônimo.</p>
+
+        <div class="field-group">
+          <label for="opiniao_geral">O que você está achando do curso até agora?</label>
+          <textarea id="opiniao_geral" placeholder="Conte sua percepção geral sobre as aulas, ritmo e exercícios..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="pontos_positivos">O que você avalia como positivo?</label>
+          <textarea id="pontos_positivos" placeholder="O que mais está te ajudando a aprender?"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="o_que_melhorar">O que pode melhorar?</label>
+          <textarea id="o_que_melhorar" placeholder="Sugestões de ajustes nas explicações, cadernos ou dinâmica da aula..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="duvidas_gerais">Dúvidas gerais ou assunto que gostaria de revisar em aula</label>
+          <textarea id="duvidas_gerais" placeholder="Alguma fórmula travou? Coloque aqui para revisarmos juntos."></textarea>
+        </div>
+      </section>
+
+      <div class="alert" id="formAlert"></div>
+      <button type="submit" class="submit-btn" id="submitBtn">Enviar Diagnóstico Anônimo</button>
+    </form>
+
+    <section class="card success-box" id="successBox">
+      <div class="success-icon">✓</div>
+      <h2>Diagnóstico enviado com sucesso!</h2>
+      <p class="card-desc">Obrigado pela participação. Suas respostas foram registradas anonimamente.</p>
+    </section>
+  </main>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPSc34k9W1iDfmF69piD3foKmTqYTjsMWVyCuGViNq8Wh0bAgn3wHz3r6SUffNg5Pp4g/exec';
+
+    const RATING_LABELS = {
+      0: 'Não conheço',
+      1: '1 ★ — Vi por cima',
+      2: '2 ★ — Faço com ajuda',
+      3: '3 ★ — Me viro bem',
+      4: '4 ★ — Tenho segurança',
+      5: '5 ★ — Domino bem'
+    };
+
+    const PHASES = [
+      {
+        tag: 'Fase 1 — Treino e Revisão',
+        title: 'Base de Tabelas, Contagens e Lógica (SE)',
+        items: [
+          { id: 'f1_tabelas', name: 'Tabelas Oficiais (Ctrl + Alt + T)', sub: 'Referências estruturadas, colunas calculadas e Linha de Totais' },
+          { id: 'f1_contagens', name: 'CONT.VALORES e CONTAR.VAZIO', sub: 'Contagem de células preenchidas e vazias' },
+          { id: 'f1_se_seerro', name: 'Função SE simples e SEERRO', sub: 'Testes lógicos básicos e tratamento de erros' },
+          { id: 'f1_se_composto', name: 'SE Composto / Aninhado', sub: 'SE dentro de SE para múltiplas classificações' },
+          { id: 'f1_se_encadeado', name: 'SE Encadeado Avançado', sub: 'Regras de negócio combinadas mais complexas' }
+        ]
+      },
+      {
+        tag: 'Fase 2 — Data e Hora',
+        title: 'Funções Temporais (Padrão Brasil)',
+        items: [
+          { id: 'f2_componentes', name: 'DIA, MÊS, ANO, DATA e TEMPO', sub: 'Extrair componentes e montar datas/horários válidos' },
+          { id: 'f2_dinamicas', name: 'HOJE() e AGORA()', sub: 'Datas e horários dinâmicos atualizados automaticamente' },
+          { id: 'f2_datadif', name: 'Função DATADIF', sub: 'Cálculo de diferença exata entre datas (anos, meses, dias)' },
+          { id: 'f2_praticos', name: 'Cálculos práticos com tempo', sub: 'Vencimentos, diferença de horas e combinações com SE' }
+        ]
+      },
+      {
+        tag: 'Fase 3 — Conts, Somas e Médias',
+        title: 'Condicionais de Agregação',
+        items: [
+          { id: 'f3_agreg_simples', name: 'CONT.SE, SOMASE e MÉDIASE', sub: 'Agregação com 1 critério, operadores numéricos e curingas (*)' },
+          { id: 'f3_agreg_multipla', name: 'CONT.SES, SOMASES e MÉDIASES', sub: 'Agregação cruzando múltiplos critérios simultâneos' }
+        ]
+      },
+      {
+        tag: 'Fase 4 — Procs',
+        title: 'Funções de Procura e Referência',
+        items: [
+          { id: 'f4_procv', name: 'PROCV', sub: 'Busca vertical exata (0) e aproximada (1), múltiplas colunas e erro #N/D' },
+          { id: 'f4_proch', name: 'PROCH', sub: 'Busca horizontal exata e aproximada' }
+        ]
+      }
+    ];
+
+    const state = {
+      caderno_atual: '',
+      dificuldade: null,
+      ratings: {}
+    };
+
+    const allConceptIds = PHASES.flatMap(p => p.items.map(i => i.id));
+    const totalRequired = 2 + allConceptIds.length; // 15
+
+    function renderPhases() {
+      const container = document.getElementById('phasesContainer');
+      container.innerHTML = PHASES.map(phase => `
+        <section class="card">
+          <div class="section-tag">${phase.tag}</div>
+          <h2>${phase.title}</h2>
+          <p class="card-desc">Marque <strong>Não conheço</strong> ou avalie de <strong>1 a 5 estrelas</strong> seu domínio atual.</p>
+          ${phase.items.map(item => `
+            <div class="concept-item" id="item-${item.id}">
+              <div class="concept-title">${item.name}</div>
+              <div class="concept-sub">${item.sub}</div>
+              <div class="rating-row" data-concept="${item.id}">
+                <button type="button" class="unknown-btn" data-val="0">Não conheço</button>
+                <div class="stars" role="radiogroup" aria-label="${item.name}">
+                  ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn" data-val="${n}" aria-label="${n} estrelas">★</button>`).join('')}
+                </div>
+                <span class="rating-label" id="label-${item.id}"></span>
+              </div>
+            </div>
+          `).join('')}
+        </section>
+      `).join('');
+
+      document.querySelectorAll('.rating-row').forEach(row => {
+        const id = row.dataset.concept;
+        const unknownBtn = row.querySelector('.unknown-btn');
+        const starBtns = [...row.querySelectorAll('.star-btn')];
+        const label = document.getElementById(`label-${id}`);
+
+        function applyVisual(val) {
+          unknownBtn.classList.toggle('active', val === 0);
+          starBtns.forEach(btn => {
+            btn.classList.toggle('filled', val > 0 && Number(btn.dataset.val) <= val);
+          });
+          label.textContent = val !== undefined ? RATING_LABELS[val] : '';
+        }
+
+        unknownBtn.addEventListener('click', () => {
+          state.ratings[id] = 0;
+          applyVisual(0);
+          document.getElementById(`item-${id}`).classList.remove('error-highlight');
+          updateProgress();
+        });
+
+        starBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const val = Number(btn.dataset.val);
+            state.ratings[id] = val;
+            applyVisual(val);
+            document.getElementById(`item-${id}`).classList.remove('error-highlight');
+            updateProgress();
+          });
+        });
+      });
+    }
+
+    function updateProgress() {
+      let done = 0;
+      if (state.caderno_atual) done++;
+      if (state.dificuldade !== null) done++;
+      allConceptIds.forEach(id => {
+        if (state.ratings[id] !== undefined) done++;
+      });
+      document.getElementById('progressText').textContent = `${done} de ${totalRequired} obrigatórias`;
+      document.getElementById('progressFill').style.width = `${Math.round((done / totalRequired) * 100)}%`;
+    }
+
+    document.getElementById('caderno_atual').addEventListener('change', (e) => {
+      state.caderno_atual = e.target.value;
+      document.getElementById('card-caderno').classList.remove('error-highlight');
+      updateProgress();
+    });
+
+    document.querySelectorAll('#difficultyGroup .diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.dificuldade = Number(btn.dataset.val);
+        document.querySelectorAll('#difficultyGroup .diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('card-dificuldade').classList.remove('error-highlight');
+        updateProgress();
+      });
+    });
+
+    function showError(msg, targetEl) {
+      const box = document.getElementById('formAlert');
+      box.textContent = msg;
+      box.style.display = 'block';
+      if (targetEl) {
+        targetEl.classList.add('error-highlight');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    document.getElementById('diagForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('formAlert').style.display = 'none';
+
+      if (!state.caderno_atual) {
+        return showError('Selecione em qual caderno de exercícios você está.', document.getElementById('card-caderno'));
+      }
+      if (state.dificuldade === null) {
+        return showError('Selecione o grau de dificuldade encontrado até agora (1 a 5).', document.getElementById('card-dificuldade'));
+      }
+      for (const id of allConceptIds) {
+        if (state.ratings[id] === undefined) {
+          return showError('Avalie todos os conceitos (marque "Não conheço" ou 1 a 5 estrelas).', document.getElementById(`item-${id}`));
+        }
+      }
+
+      const payload = {
+        caderno_atual: state.caderno_atual,
+        dificuldade: state.dificuldade,
+        ...state.ratings,
+        opiniao_geral: document.getElementById('opiniao_geral').value.trim(),
+        pontos_positivos: document.getElementById('pontos_positivos').value.trim(),
+        o_que_melhorar: document.getElementById('o_que_melhorar').value.trim(),
+        duvidas_gerais: document.getElementById('duvidas_gerais').value.trim()
+      };
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'Erro ao salvar resposta.');
+
+        document.getElementById('diagForm').style.display = 'none';
+        document.querySelector('.progress-sticky').style.display = 'none';
+        document.getElementById('successBox').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Diagnóstico Anônimo';
+        showError('Não foi possível enviar agora. Verifique a conexão e tente novamente.');
+      }
+    });
+
+    renderPhases();
+    updateProgress();
+  </script>
+</body>
+</html>
